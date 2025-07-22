@@ -48,19 +48,22 @@ def send_notification():
     if not token:
         return jsonify({"error": f"No token found for user '{user}'"}), 404
 
-    message = messaging.Message(
-        notification=messaging.Notification(
-            title=title,
-            body=body,
+   message = messaging.Message(
+    notification=messaging.Notification(
+        title=title,
+        body=body,
+    ),
+    token=token,
+    webpush=messaging.WebpushConfig(
+        notification=messaging.WebpushNotification(
+            icon="https://your-domain.com/assets/icon.png"
         ),
-        token=token,
-        webpush=messaging.WebpushConfig(
-            notification=messaging.WebpushNotification(
-                icon="https://your-domain.com/assets/icon.png",  # Replace with your absolute icon URL
-                click_action="https://your-domain.com/dashboard"  # Replace with your app URL
-            )
+        fcm_options=messaging.WebpushFCMOptions(
+            link="https://your-domain.com/dashboard"
         )
     )
+)
+
 
     try:
         response = messaging.send(message)
