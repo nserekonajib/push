@@ -4,3 +4,4 @@ pyfcm
 firebase-admin
 gunicorn
 waitress
+traceback
