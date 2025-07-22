@@ -1,0 +1,6 @@
+Flask
+Flask-Cors
+pyfcm
+firebase-admin
+gunicorn
+waitress
