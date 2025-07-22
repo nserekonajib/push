@@ -6,18 +6,18 @@ import logging
 import traceback
 
 app = Flask(__name__)
-CORS(app)  # Consider restricting origins in production, e.g., CORS(app, resources={r"/*": {"origins": "https://your-frontend.com"}})
+CORS(app)  # Adjust origins as needed in production
 
-# Initialize Firebase Admin SDK once
+# Initialize Firebase Admin SDK
 try:
-    cred = credentials.Certificate("n.json")
+    cred = credentials.Certificate("n.json")  # Your service account JSON path
     firebase_admin.initialize_app(cred)
     logging.info("Firebase Admin SDK initialized successfully.")
 except Exception as e:
     logging.error(f"Failed to initialize Firebase Admin SDK: {e}")
     raise e
 
-# In-memory token storage (replace with persistent DB in production)
+# In-memory user tokens store (replace with DB in production)
 user_tokens = {}
 
 @app.route("/register-token", methods=["POST"])
@@ -55,11 +55,10 @@ def send_notification():
         ),
         token=token,
         webpush=messaging.WebpushConfig(
-            notification={
-                # Use absolute URLs for icon and click_action
-                "icon": "https://your-domain.com/assets/icon.png",
-                "click_action": "https://your-domain.com/dashboard"
-            }
+            notification=messaging.WebpushNotification(
+                icon="https://your-domain.com/assets/icon.png",  # Replace with your absolute icon URL
+                click_action="https://your-domain.com/dashboard"  # Replace with your app URL
+            )
         )
     )
 
