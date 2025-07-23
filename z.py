@@ -5,21 +5,23 @@ from firebase_admin import credentials, messaging
 import logging
 import traceback
 
+# --- Flask App Setup ---
 app = Flask(__name__)
-CORS(app)  # Adjust origins for production as needed
+CORS(app)
 
-# Initialize Firebase Admin SDK
+# --- Firebase Admin SDK Initialization ---
 try:
-    cred = credentials.Certificate("n.json")  # Your Firebase service account file
+    cred = credentials.Certificate("n.json")  # Your Firebase service account JSON
     firebase_admin.initialize_app(cred)
     logging.info("Firebase Admin SDK initialized successfully.")
 except Exception as e:
     logging.error(f"Failed to initialize Firebase Admin SDK: {e}")
     raise e
 
-# In-memory user tokens store (replace with DB for production)
+# --- In-Memory Store for FCM Tokens (Replace with DB in Production) ---
 user_tokens = {}
 
+# --- Register Device Token ---
 @app.route("/register-token", methods=["POST"])
 def register_token():
     data = request.get_json(force=True)
@@ -33,6 +35,7 @@ def register_token():
     logging.info(f"Registered token for user '{user}': {token}")
     return jsonify({"message": "Token registered successfully"}), 200
 
+# --- Send Notification to One User ---
 @app.route("/send-notification", methods=["POST"])
 def send_notification():
     data = request.get_json(force=True)
@@ -72,5 +75,44 @@ def send_notification():
         logging.error(traceback.format_exc())
         return jsonify({"error": "Failed to send notification", "details": str(e)}), 500
 
+# --- Broadcast Notification to All Registered Devices ---
+@app.route("/broadcast", methods=["POST"])
+def broadcast():
+    data = request.get_json(force=True)
+    title = data.get("title", "🔔 New Notification")
+    body = data.get("body", "This is a message to all devices.")
+
+    results = []
+    for user, token in user_tokens.items():
+        message = messaging.Message(
+            notification=messaging.Notification(
+                title=title,
+                body=body,
+            ),
+            token=token,
+            webpush=messaging.WebpushConfig(
+                notification=messaging.WebpushNotification(
+                    icon="https://your-domain.com/assets/icon.png"
+                ),
+                fcm_options=messaging.WebpushFCMOptions(
+                    link="https://your-domain.com/dashboard"
+                )
+            )
+        )
+        try:
+            response = messaging.send(message)
+            results.append({user: response})
+            logging.info(f"Broadcast sent to {user}: {response}")
+        except Exception as e:
+            results.append({user: str(e)})
+            logging.error(f"Broadcast failed for {user}: {e}")
+            logging.error(traceback.format_exc())
+
+    return jsonify({"results": results}), 200
+
+# --- Optional Root Endpoint ---
+@app.route("/", methods=["GET"])
+def index():
+    return jsonify({"message": "Push Notification Server is running"}), 200
 
 
